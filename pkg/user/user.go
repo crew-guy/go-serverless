@@ -6,7 +6,6 @@ import (
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
@@ -38,7 +37,7 @@ func FetchUser(email, tableName string, dynaClient dynamodbiface.DynamoDBAPI) (*
 				S:aws.String(email)
 			}
 		},
-		TableName:= aws.String(tableName);
+		TableName := aws.String(tableName);
 	}
 	result, err := dynaClient.GetItem(input)
 	if err!=nil{
@@ -134,4 +133,23 @@ func UpdateUser(req events.APIGatewayProxyRequest, tableName string, dynaClient 
 
 	return &u,nil
 }
-func DeleteUser() {}
+func DeleteUser(req events.APIGatewayProxyRequest, tableName string, dynaClient dynamodbiface.DynamoDBAPI)(
+	*User,
+	error
+) {
+	// check if user exists
+	email := req.QueryStringParameters["email"]
+	input := &dynamodb.DeleteItemInput{
+		Key: map[string]*dynamodb.AttributeValue{
+			"email":{
+				S:aws.String(email)
+			}
+		},
+		TableName: aws.String(tableName),
+	}
+	_, err := dynaClient.DeleteItem(input)
+	if err!=nil{
+		return nil, errors.New(ErrorCouldNotDeleteItem)
+	}
+	return nil
+}
