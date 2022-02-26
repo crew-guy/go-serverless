@@ -12,7 +12,6 @@ import (
 
 var(
 	ErrorFailedToFetchRecord = "failed to fetch record",
-	ErrorFailedToUnmarshalRecord = "failed to translate record"
 )
 
 type User struct {
@@ -38,12 +37,25 @@ func FetchUser(email, tableName string, dynaClient dynamodbiface.DynamoDBAPI) (*
 	item := new(User)
 	err = dynamodbattribute.UnmarshalMap(result.Item, item)
 	if err!=nil{
-		return nil, errors.New(ErrorFailedToUnmarshalRecord)
+		return nil, errors.New(ErrorFailedToFetchRecord)
 	}
 	return item, nil
 }
 
-func FetchUsers() {}
+func FetchUsers(tableName string, dynaClient dynamodbiface.DynamoDBAPI)(*[]User, error) {
+	input := &dynaClient.ScanInput{
+		TableName:aws.String(tableName)
+	}
+	result, err = dynaClient.Scan(input)
+
+	if err!=nil{
+		return nil, errors.New(ErrorFailedToFetchRecord)
+	}
+
+	data := new([]User)
+	err = dynamodbattribute.UnmarshalMap(result.Items,data )
+	return data, nil
+}
 func CreateUser() {}
 func UpdateUser() {}
 func DeleteUser() {}
