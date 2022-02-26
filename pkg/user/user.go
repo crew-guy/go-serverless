@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbiface"
+	"github.com/crew-guy/go-serverless/pkg/validators"
 )
 
 var (
@@ -28,7 +29,7 @@ type User struct {
 	Email     string `json:"email"`
 	FirstName string `json:"firstName"`
 	LastName  string `json:"lastName" `
-}
+};
 
 func FetchUser(email, tableName string, dynaClient dynamodbiface.DynamoDBAPI) (*User, error) {
 	input := &dynamodb.GetItemInput{
@@ -37,7 +38,7 @@ func FetchUser(email, tableName string, dynaClient dynamodbiface.DynamoDBAPI) (*
 				S:aws.String(email)
 			}
 		},
-		TableName := aws.String(tableName)
+		TableName:= aws.String(tableName);
 	}
 	result, err := dynaClient.GetItem(input)
 	if err!=nil{
@@ -71,8 +72,7 @@ func CreateUser(req events.APIGatewayProxyRequest, tableName string, dynaClient 
 	error
 ) {
 	var u User;
-	if err := json.Unmarshal([]byte(req.body), &u);
-	err != nil{
+	if err := json.Unmarshal([]byte(req.body), &u); err != nil{
 		return nil, errors.New(ErrorInvalidUserData)
 	}
 	if !validators.IsEmailValid(u.Email){
@@ -84,7 +84,7 @@ func CreateUser(req events.APIGatewayProxyRequest, tableName string, dynaClient 
 	if currentUser !=nil && len(currentUser.Email) != 0{
 		return nil, errors.New(ErrorUserAlreadyExists)
 	}
-	av, err := dynamodbattribute.marshalMap(u)
+	av, err := dynamodbattribute.MarshalMap(u)
 
 	if err!=nil{
 		return errors.New(ErrorCouldNotMarshalItem)
@@ -95,7 +95,43 @@ func CreateUser(req events.APIGatewayProxyRequest, tableName string, dynaClient 
 		TableName : aws.String(tableName)
 	}
 
-	dynaClient.PutItem(input)
+	_, err := dynaClient.PutItem(input)
+	if error !=nil{
+		return errors.New(ErrorCouldNotDynamoPutItem)
+	}
+	return &u, nil;	
 }
-func UpdateUser() {}
+
+func UpdateUser(req events.APIGatewayProxyRequest, tableName string, dynaClient dynamodbiface.DynamoDBAPI)(*User, error) {
+	var u User;
+	if err := json.Unmarshal([]byte(req.body), &u); err !=nil{
+		return errors.New(ErrorCouldNotMarshalItem)
+	}
+	if !validators.IsEmailValid(email){
+		return errors.New(ErrorInvalidEmail)
+	}
+	
+	// check if user exists
+	currentUser, _ = FetchUser(u.Email,tableName,dynaClient)
+	if currentUser !=nil && len(currentUser.Email)==0{
+		return nil, errors.New(ErrorUserDoesNotExist)
+	}
+
+	av, err := dynamodbattribute.MarshalMap(u)
+	if err!=nil{
+		return errors.New(ErrorCouldNotMarshalItem)
+	}
+
+	input := &dynamodb.PutItemInput{
+		Item:av,
+		TableName:aws.String(tableName)
+	}
+
+	_, err := dynaClient.PutItem(input)
+	if err!=nil{
+		return nil, errors.new(ErrorCouldNotDynamoPutItem)
+	}
+
+	return &u,nil
+}
 func DeleteUser() {}
